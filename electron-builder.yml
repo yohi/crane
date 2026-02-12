@@ -1,0 +1,11 @@
+appId: com.mstb.crane
+productName: MSTB Crane
+directories:
+  output: release
+  buildResources: build
+files:
+  - dist/**/*
+  - package.json
+linux:
+  target: deb
+  category: Network

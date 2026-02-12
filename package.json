@@ -1,6 +1,7 @@
 {
   "name": "mstb-crane",
   "version": "1.0.0",
+  "description": "Multi-Session Tile Browser",
   "main": "dist/main/main.js",
   "scripts": {
     "dev": "concurrently \"npm run dev:renderer\" \"npm run dev:main\"",
@@ -10,10 +11,11 @@
     "build": "rimraf dist && npm run build:renderer && npm run build:main",
     "build:renderer": "vite build",
     "build:main": "tsc -p tsconfig.main.json",
+    "dist": "electron-builder",
     "prestart": "npm run build:main"
   },
   "keywords": [],
-  "author": "",
+  "author": "MSTB Team",
   "license": "ISC",
   "devDependencies": {
     "@playwright/test": "^1.58.2",
