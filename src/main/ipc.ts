@@ -30,7 +30,7 @@ export function registerIpc() {
 
   ipcMain.handle('MSTB_CLOSE_TILE', async (_, { viewId }) => {
     if (viewId) {
-      viewManager.destroyView(viewId);
+      await viewManager.destroyView(viewId);
     }
   });
 }

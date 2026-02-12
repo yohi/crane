@@ -77,6 +77,17 @@ const Tile: React.FC<TileProps> = ({ id, initialUrl, onClose }) => {
 
   const handleNavigate = (e: React.FormEvent) => {
     e.preventDefault();
+    try {
+      const parsed = new URL(url);
+      if (['javascript:', 'data:', 'vbscript:'].includes(parsed.protocol)) {
+        console.error('Navigation to unsafe scheme rejected:', parsed.protocol);
+        return;
+      }
+    } catch (_) {
+      // If new URL() fails, it usually means missing protocol (e.g. "google.com").
+      // The main process will handle adding https://, so we consider this safe
+      // as long as it's not a valid URL with a dangerous scheme.
+    }
     window.electronAPI.navigate(id, url);
   };
 
