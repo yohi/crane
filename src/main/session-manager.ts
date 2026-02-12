@@ -8,10 +8,6 @@ export class SessionManager {
    * Uses an in-memory partition 'z-session-${id}'.
    */
   createSession(id: string): Session {
-    if (this.sessions.has(id)) {
-      return this.sessions.get(id)!;
-    }
-
     const partition = `z-session-${id}`;
     const sess = session.fromPartition(partition, { cache: false });
 
@@ -40,13 +36,13 @@ export class SessionManager {
   async destroySession(id: string): Promise<void> {
     const sess = this.sessions.get(id);
     if (sess) {
-      this.sessions.delete(id);
       try {
         await sess.clearCache();
         await sess.clearStorageData();
       } catch (e) {
         console.error(`Failed to clear session data for ${id}:`, e);
       }
+      this.sessions.delete(id);
     }
   }
 }
