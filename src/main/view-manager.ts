@@ -9,6 +9,16 @@ export class ViewManager {
     this.mainWindow = window;
   }
 
+  private _loadURL(view: WebContentsView, id: string, url: string) {
+    let targetUrl = url;
+    if (!/^https?:\/\//i.test(url) && !/^about:/.test(url)) {
+      targetUrl = 'https://' + url;
+    }
+    view.webContents.loadURL(targetUrl).catch(e => {
+      console.error(`Failed to load URL ${targetUrl} in view ${id}:`, e);
+    });
+  }
+
   createView(id: string, url: string = 'about:blank'): WebContentsView | undefined {
     if (!this.mainWindow) {
       console.error('Main window not set, cannot create view');
@@ -33,11 +43,11 @@ export class ViewManager {
     });
 
     this.mainWindow.contentView.addChildView(view);
-    view.webContents.loadURL(url);
+    this._loadURL(view, id, url);
 
     // Handle new window requests (e.g. target="_blank")
     view.webContents.setWindowOpenHandler(({ url }) => {
-      view.webContents.loadURL(url);
+      this._loadURL(view, id, url);
       return { action: 'deny' };
     });
 
@@ -64,14 +74,7 @@ export class ViewManager {
   navigate(id: string, url: string) {
     const view = this.views.get(id);
     if (view) {
-      // Basic validation or protocol addition
-      let targetUrl = url;
-      if (!/^https?:\/\//i.test(url) && !/^about:/.test(url)) {
-        targetUrl = 'https://' + url;
-      }
-      view.webContents.loadURL(targetUrl).catch(e => {
-        console.error(`Failed to load URL ${targetUrl} in view ${id}:`, e);
-      });
+      this._loadURL(view, id, url);
     }
   }
 
@@ -90,8 +93,10 @@ export class ViewManager {
 
   destroyView(id: string) {
     const view = this.views.get(id);
-    if (view && this.mainWindow) {
-      this.mainWindow.contentView.removeChildView(view);
+    if (view) {
+      if (this.mainWindow) {
+        this.mainWindow.contentView.removeChildView(view);
+      }
 
       // Explicitly destroy webContents to free resources immediately
       if (!view.webContents.isDestroyed()) {
