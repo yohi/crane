@@ -46,10 +46,7 @@ const App: React.FC = () => {
   };
 
   const addTab = async (url: string = 'https://google.com') => {
-    // If we have 9 tabs, maybe limit? TileGrid supports up to 9 nicely.
-    // Let's keep 9 as soft limit for grid visualization, but Tabs can be more.
-    // But Grid logic in TileGrid handles up to 9.
-    // Let's stick to 9 for now to avoid grid issues, or just let it overflow (TileGrid handles it poorly currently).
+    // Limit total tabs to 9. TileGrid supports up to 9 nicely, so we enforce this hard limit.
     if (tiles.length >= 9) {
         console.warn("Max tabs reached");
         return;
@@ -65,22 +62,26 @@ const App: React.FC = () => {
     }
   };
 
-  const closeTab = (id: string) => {
-    // Call IPC to destroy view
-    window.electronAPI.closeTile(id);
+  const closeTab = async (id: string) => {
+    try {
+      // Call IPC to destroy view
+      await window.electronAPI.closeTile(id);
 
-    setTiles(prev => {
-      const newTiles = prev.filter(t => t.id !== id);
-      // If we closed the active tab, switch to another
-      if (id === activeTabId) {
-        if (newTiles.length > 0) {
-          setActiveTabId(newTiles[newTiles.length - 1].id);
-        } else {
-          setActiveTabId(null);
+      setTiles(prev => {
+        const newTiles = prev.filter(t => t.id !== id);
+        // If we closed the active tab, switch to another
+        if (id === activeTabId) {
+          if (newTiles.length > 0) {
+            setActiveTabId(newTiles[newTiles.length - 1].id);
+          } else {
+            setActiveTabId(null);
+          }
         }
-      }
-      return newTiles;
-    });
+        return newTiles;
+      });
+    } catch (e) {
+      console.error("Failed to close tab:", e);
+    }
   };
 
   const handleTabSelect = (id: string) => {
