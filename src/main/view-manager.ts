@@ -1,28 +1,28 @@
-import { BrowserView, BrowserWindow, Rectangle } from 'electron';
+import { WebContentsView, BrowserWindow, Rectangle } from 'electron';
 import { sessionManager } from './session-manager';
 
 export class ViewManager {
-  private views: Map<string, BrowserView> = new Map();
+  private views: Map<string, WebContentsView> = new Map();
   private mainWindow: BrowserWindow | null = null;
 
   setMainWindow(window: BrowserWindow) {
     this.mainWindow = window;
   }
 
-  createView(id: string, url: string = 'about:blank') {
+  createView(id: string, url: string = 'about:blank'): WebContentsView | undefined {
     if (!this.mainWindow) {
       console.error('Main window not set, cannot create view');
-      return;
+      return undefined;
     }
 
     // specific handling for existing view
     if (this.views.has(id)) {
       console.warn(`View ${id} already exists`);
-      return this.views.get(id);
+      return undefined;
     }
 
     const session = sessionManager.createSession(id);
-    const view = new BrowserView({
+    const view = new WebContentsView({
       webPreferences: {
         session: session,
         nodeIntegration: false,
@@ -32,7 +32,7 @@ export class ViewManager {
       },
     });
 
-    this.mainWindow.addBrowserView(view);
+    this.mainWindow.contentView.addChildView(view);
     view.webContents.loadURL(url);
 
     // Handle new window requests (e.g. target="_blank")
@@ -52,7 +52,7 @@ export class ViewManager {
         // Adjust bounds relative to window content if needed,
         // but normally bounds from renderer are client coordinates.
         // If the window has a title bar, we might need offset?
-        // Electron BrowserView setBounds is relative to the window's content area (below title bar on macOS? check docs).
+        // Electron WebContentsView setBounds is relative to the window's content area (below title bar on macOS? check docs).
         // Actually setBounds is relative to the window's client area.
         view.setBounds(bounds);
       } catch (error) {
@@ -91,12 +91,12 @@ export class ViewManager {
   destroyView(id: string) {
     const view = this.views.get(id);
     if (view && this.mainWindow) {
-      this.mainWindow.removeBrowserView(view);
+      this.mainWindow.contentView.removeChildView(view);
 
       // Explicitly destroy webContents to free resources immediately
       if (!view.webContents.isDestroyed()) {
         try {
-          (view.webContents as any).destroy();
+          view.webContents.close({ waitForBeforeUnload: false });
         } catch (e) {
           console.error(`Failed to destroy WebContents for ${id}:`, e);
         }

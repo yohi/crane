@@ -8,6 +8,10 @@ export class SessionManager {
    * Uses an in-memory partition 'z-session-${id}'.
    */
   createSession(id: string): Session {
+    if (this.sessions.has(id)) {
+      return this.sessions.get(id)!;
+    }
+
     const partition = `z-session-${id}`;
     const sess = session.fromPartition(partition, { cache: false });
 
