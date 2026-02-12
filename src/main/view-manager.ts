@@ -1,8 +1,9 @@
-import { WebContentsView, BrowserWindow, Rectangle } from 'electron';
+import { WebContentsView, BrowserWindow, Rectangle, Menu, MenuItem } from 'electron';
 import { sessionManager } from './session-manager';
 
 export class ViewManager {
   private views: Map<string, WebContentsView> = new Map();
+  private visibleViews: Set<string> = new Set();
   private mainWindow: BrowserWindow | null = null;
 
   setMainWindow(window: BrowserWindow) {
@@ -33,6 +34,7 @@ export class ViewManager {
     });
 
     this.mainWindow.contentView.addChildView(view);
+    this.visibleViews.add(id);
     view.webContents.loadURL(url);
 
     // Handle new window requests (e.g. target="_blank")
@@ -41,22 +43,65 @@ export class ViewManager {
       return { action: 'deny' };
     });
 
+    // Context Menu
+    view.webContents.on('context-menu', (_, params) => {
+      const menu = new Menu();
+
+      menu.append(new MenuItem({ label: 'Cut', role: 'cut' }));
+      menu.append(new MenuItem({ label: 'Copy', role: 'copy' }));
+      menu.append(new MenuItem({ label: 'Paste', role: 'paste' }));
+      menu.append(new MenuItem({ type: 'separator' }));
+      menu.append(new MenuItem({ label: 'Select All', role: 'selectAll' }));
+      menu.append(new MenuItem({ type: 'separator' }));
+
+      // Custom item: Open multiple tabs
+      menu.append(new MenuItem({
+        label: '新しいタブで複数開く',
+        click: () => {
+          if (this.mainWindow) {
+            this.mainWindow.webContents.send('MSTB_SHOW_TAB_CREATION_MODAL');
+          }
+        }
+      }));
+
+      menu.append(new MenuItem({ type: 'separator' }));
+      menu.append(new MenuItem({
+        label: 'Inspect Element',
+        click: () => {
+          view.webContents.inspectElement(params.x, params.y);
+        }
+      }));
+
+      menu.popup();
+    });
+
     this.views.set(id, view);
     return view;
   }
 
   updateBounds(id: string, bounds: Rectangle) {
     const view = this.views.get(id);
-    if (view) {
+    if (view && this.mainWindow) {
       try {
-        // Adjust bounds relative to window content if needed,
-        // but normally bounds from renderer are client coordinates.
-        // If the window has a title bar, we might need offset?
-        // Electron WebContentsView setBounds is relative to the window's content area (below title bar on macOS? check docs).
-        // Actually setBounds is relative to the window's client area.
+        if (!this.visibleViews.has(id)) {
+          this.mainWindow.contentView.addChildView(view);
+          this.visibleViews.add(id);
+        }
         view.setBounds(bounds);
       } catch (error) {
         console.error(`Failed to update bounds for view ${id}:`, error);
+      }
+    }
+  }
+
+  hideView(id: string) {
+    const view = this.views.get(id);
+    if (view && this.mainWindow) {
+      try {
+        this.mainWindow.contentView.removeChildView(view);
+        this.visibleViews.delete(id);
+      } catch (error) {
+        console.error(`Failed to hide view ${id}:`, error);
       }
     }
   }
@@ -107,6 +152,7 @@ export class ViewManager {
       }
 
       this.views.delete(id);
+      this.visibleViews.delete(id);
       sessionManager.destroySession(id);
     }
   }
