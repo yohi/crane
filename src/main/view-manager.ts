@@ -33,11 +33,26 @@ export class ViewManager {
     });
 
     this.mainWindow.addBrowserView(view);
-    view.webContents.loadURL(url);
+
+    // Basic validation or protocol addition (replicated from navigate)
+    let targetUrl = url;
+    if (!/^https?:\/\//i.test(url) && !/^about:/.test(url)) {
+      targetUrl = 'https://' + url;
+    }
+    view.webContents.loadURL(targetUrl).catch(e => {
+      console.error(`Failed to load URL ${targetUrl} in view ${id}:`, e);
+    });
 
     // Handle new window requests (e.g. target="_blank")
     view.webContents.setWindowOpenHandler(({ url }) => {
-      view.webContents.loadURL(url);
+      // Basic validation or protocol addition (replicated from navigate)
+      let targetUrl = url;
+      if (!/^https?:\/\//i.test(url) && !/^about:/.test(url)) {
+        targetUrl = 'https://' + url;
+      }
+      view.webContents.loadURL(targetUrl).catch(e => {
+        console.error(`Failed to load URL ${targetUrl} in view ${id}:`, e);
+      });
       return { action: 'deny' };
     });
 
@@ -88,7 +103,7 @@ export class ViewManager {
     }
   }
 
-  destroyView(id: string) {
+  async destroyView(id: string) {
     const view = this.views.get(id);
     if (view && this.mainWindow) {
       this.mainWindow.removeBrowserView(view);
@@ -103,13 +118,13 @@ export class ViewManager {
       }
 
       this.views.delete(id);
-      sessionManager.destroySession(id);
+      await sessionManager.destroySession(id);
     }
   }
 
-  destroyAll() {
-    for (const id of this.views.keys()) {
-      this.destroyView(id);
+  async destroyAll() {
+    for (const id of Array.from(this.views.keys())) {
+      await this.destroyView(id);
     }
   }
 }

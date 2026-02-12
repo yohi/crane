@@ -29,7 +29,7 @@
 | `MSTB_CREATE_TILE` | Renderer -> Main | `{ url?: string }` | Requests creation of a new tile. Returns `viewId`. |
 | `MSTB_UPDATE_BOUNDS` | Renderer -> Main | `{ viewId: string, bounds: { x, y, width, height } }` | Updates the `BrowserView` bounds to match the placeholder. |
 | `MSTB_NAVIGATE` | Renderer -> Main | `{ viewId: string, url: string }` | Navigates the tile to a URL. |
-| `MSTB_ACTION` | Renderer -> Main | `{ viewId: string, action: 'back' \| 'reload' }` | Performs browser action. |
+| `MSTB_ACTION` | Renderer -> Main | `{ viewId: string, action: 'back' \| 'reload' \| 'focus' }` | Performs browser action. |
 | `MSTB_CLOSE_TILE` | Renderer -> Main | `{ viewId: string }` | Closes the tile and destroys the session. |
 
 ## Test Cases
