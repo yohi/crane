@@ -24,8 +24,17 @@ const App: React.FC = () => {
   }, []);
 
   const handleCreateMultiple = async (count: number) => {
+    // Limit total tabs to 9
+    const available = 9 - tiles.length;
+    if (available <= 0) {
+      console.warn("Max tabs reached");
+      return;
+    }
+
+    const countToCreate = Math.min(count, available);
+
     try {
-      const newTabs = await window.electronAPI.createMultipleTabs(count, 'https://google.com');
+      const newTabs = await window.electronAPI.createMultipleTabs(countToCreate, 'https://google.com');
       setTiles(prev => [...prev, ...newTabs]);
       if (newTabs.length > 0) {
         setActiveTabId(newTabs[newTabs.length - 1].id);
