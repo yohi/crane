@@ -15,7 +15,7 @@
     "prestart": "npm run build:main"
   },
   "keywords": [],
-  "author": "MSTB Team",
+  "author": "MSTB Team <support@mstb.crane>",
   "license": "ISC",
   "devDependencies": {
     "@playwright/test": "^1.58.2",
