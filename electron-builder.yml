@@ -9,3 +9,8 @@ files:
 linux:
   target: deb
   category: Network
+mac:
+  target: dmg
+  category: public.app-category.productivity
+win:
+  target: nsis
