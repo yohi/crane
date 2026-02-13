@@ -26,7 +26,9 @@ const App: React.FC = () => {
 
   const handleCreateMultiple = async (count: number) => {
     // Limit total tabs to 9
-    const normalizedCount = Math.max(0, Math.floor(count));
+    const parsed = Number(count);
+    const normalizedCount = Number.isFinite(parsed) ? Math.max(0, Math.floor(parsed)) : 0;
+
     if (normalizedCount === 0) return;
     const available = 9 - (tiles.length + pendingCreationsRef.current);
     if (available <= 0) {
@@ -47,7 +49,9 @@ const App: React.FC = () => {
     } catch (e) {
       console.error("Failed to create multiple tabs:", e);
     } finally {
-      pendingCreationsRef.current -= countToCreate;
+      if (Number.isFinite(countToCreate)) {
+        pendingCreationsRef.current -= countToCreate;
+      }
     }
   };
 

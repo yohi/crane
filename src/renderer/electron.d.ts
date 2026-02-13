@@ -4,6 +4,8 @@ export interface ElectronAPI {
   navigate: (viewId: string, url: string) => Promise<void>;
   action: (viewId: string, action: 'back' | 'reload' | 'focus') => Promise<void>;
   closeTile: (viewId: string) => Promise<void>;
+  createMultipleTabs: (count: number, url: string) => Promise<{ id: string; url: string }[]>;
+  onShowTabCreationModal: (callback: () => void) => () => void;
 }
 
 declare global {
