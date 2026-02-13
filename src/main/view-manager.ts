@@ -79,7 +79,11 @@ export class ViewManager {
         }
       }));
 
-      menu.popup();
+      if (this.mainWindow) {
+        menu.popup({ window: this.mainWindow });
+      } else {
+        menu.popup();
+      }
     });
 
     this.views.set(id, view);

@@ -146,28 +146,34 @@ const App: React.FC = () => {
 
       {/* Main Content Area */}
       <div className="flex-1 relative overflow-hidden">
-        {viewMode === 'grid' ? (
-          <TileGrid tiles={tiles} onClose={closeTab} />
-        ) : (
-          /* Tab View: Render only the active tab */
-          activeTabId && (
-            <div className="w-full h-full">
-               {/* We need to find the url for the active tab */}
-               {(() => {
-                 const activeTile = tiles.find(t => t.id === activeTabId);
-                 if (!activeTile) return <div className="p-4">Tab not found</div>;
-                 return (
-                   <Tile
-                     key={activeTile.id} // Key ensures remount on switch? No, we want to persist if possible.
-                     // But if we unmount Tile component, we lose the bounds sync.
-                     // That's fine, as long as we remount it when switching back.
-                     id={activeTile.id}
-                     initialUrl={activeTile.url}
-                     onClose={closeTab}
-                   />
-                 );
-               })()}
-            </div>
+        {/*
+          Hide tile content when modal is open to prevent native WebContentsView
+          from obscuring the React modal. Unmounting triggers cleanup which calls hideTile.
+        */}
+        {!isModalOpen && (
+          viewMode === 'grid' ? (
+            <TileGrid tiles={tiles} onClose={closeTab} />
+          ) : (
+            /* Tab View: Render only the active tab */
+            activeTabId && (
+              <div className="w-full h-full">
+                 {/* We need to find the url for the active tab */}
+                 {(() => {
+                   const activeTile = tiles.find(t => t.id === activeTabId);
+                   if (!activeTile) return <div className="p-4">Tab not found</div>;
+                   return (
+                     <Tile
+                       key={activeTile.id} // Key ensures remount on switch? No, we want to persist if possible.
+                       // But if we unmount Tile component, we lose the bounds sync.
+                       // That's fine, as long as we remount it when switching back.
+                       id={activeTile.id}
+                       initialUrl={activeTile.url}
+                       onClose={closeTab}
+                     />
+                   );
+                 })()}
+              </div>
+            )
           )
         )}
 
