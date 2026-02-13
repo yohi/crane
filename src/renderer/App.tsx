@@ -27,6 +27,7 @@ const App: React.FC = () => {
   const handleCreateMultiple = async (count: number) => {
     // Limit total tabs to 9
     const normalizedCount = Math.max(0, Math.floor(count));
+    if (normalizedCount === 0) return;
     const available = 9 - (tiles.length + pendingCreationsRef.current);
     if (available <= 0) {
       console.warn("Max tabs reached");
