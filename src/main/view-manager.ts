@@ -56,11 +56,17 @@ export class ViewManager {
 
       // Custom item: Open multiple tabs
       menu.append(new MenuItem({
-        label: '新しいタブで複数開く',
+        label: '別セッションでタブを複数開く',
         click: () => {
           if (this.mainWindow) {
             const targetUrl = params.linkURL || params.pageURL || '';
-            this.mainWindow.webContents.send('MSTB_SHOW_TAB_CREATION_MODAL', targetUrl);
+            try {
+              this.mainWindow.webContents.send('MSTB_SHOW_TAB_CREATION_MODAL', targetUrl);
+            } catch (e) {
+              console.error('Failed to send IPC message:', e);
+            }
+          } else {
+            console.error('Main window reference is missing in ViewManager');
           }
         }
       }));
