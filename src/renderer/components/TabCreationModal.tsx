@@ -4,9 +4,10 @@ interface TabCreationModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (count: number) => void;
+  url?: string;
 }
 
-const TabCreationModal: React.FC<TabCreationModalProps> = ({ isOpen, onClose, onSubmit }) => {
+const TabCreationModal: React.FC<TabCreationModalProps> = ({ isOpen, onClose, onSubmit, url }) => {
   const [count, setCount] = useState(2);
 
   if (!isOpen) return null;
@@ -21,6 +22,11 @@ const TabCreationModal: React.FC<TabCreationModalProps> = ({ isOpen, onClose, on
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-gray-800 p-6 rounded shadow-lg border border-gray-700 w-80">
         <h2 className="text-xl font-bold mb-4 text-white">Open Multiple Tabs</h2>
+        {url && (
+          <div className="mb-4 p-2 bg-gray-700 rounded text-xs text-gray-300 break-all">
+            Opening: {url}
+          </div>
+        )}
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
             <label className="block text-gray-400 text-sm font-bold mb-2">
