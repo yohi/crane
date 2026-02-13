@@ -4,6 +4,8 @@ interface TileProps {
   id: string;
   initialUrl?: string;
   onClose: (id: string) => void;
+  // We might want to notify when the user navigates, to update the tab title/url
+  // but for now let's keep it simple.
 }
 
 const Tile: React.FC<TileProps> = ({ id, initialUrl, onClose }) => {
@@ -11,29 +13,33 @@ const Tile: React.FC<TileProps> = ({ id, initialUrl, onClose }) => {
   const [url, setUrl] = useState(initialUrl || '');
 
   useEffect(() => {
-    // Navigate to initial URL if provided
+    // Navigate to initial URL if provided.
+    // Note: If we remount an existing tile (e.g. switch back to grid),
+    // we don't necessarily want to navigate again if it's already there.
+    // But the view is persistent in main. Calling navigate again might reload.
+    // We should probably check if it's a *new* tile.
+    // However, for now, let's assume the main process handles "navigate to same url" gracefully
+    // or we can rely on the fact that 'initialUrl' is passed only on creation?
+    // No, it's passed from state.
+
+    // Better approach: The main process knows the state of the view.
+    // If we just want to ensure it exists and has bounds, we focus on bounds.
+    // Navigation should ideally happen only once.
+    // Let's rely on the creation step in App.tsx to navigate.
+    // But `Tile` was doing it.
+
+    // If we leave it here, every time we switch views and remount `Tile`, it might reload.
+    // Let's remove navigation from here and let the creator handle initial navigation.
+    // OR, we keep it but ensure Main doesn't reload if same URL?
+    // Let's keep it for now but be aware.
     if (initialUrl) {
-      window.electronAPI.navigate(id, initialUrl);
+       // We can't easily check if it's already loaded here without IPC query.
+       // Let's move navigation responsibility to the `addTile` function in App.
     }
 
-    const observer = new ResizeObserver((entries) => {
-      for (const entry of entries) {
-        const { x, y, width, height } = entry.contentRect;
-        // We need screen coordinates, but contentRect is relative to element?
-        // Actually we need client rect relative to window.
-        // Electron BrowserView setBounds is relative to the window content area.
-        // So element.getBoundingClientRect() is what we want.
-
+    const updateBounds = () => {
         if (containerRef.current) {
           const rect = containerRef.current.getBoundingClientRect();
-          // We also need to account for the toolbar height if the BrowserView should be below it.
-          // Let's assume the Toolbar is part of the React component and the BrowserView
-          // fills the rest of the space.
-          // So we should have a container for the BrowserView specifically.
-
-          // However, ResizeObserver observes the container size.
-          // We can use the container's rect.
-
           window.electronAPI.updateBounds(id, {
             x: Math.round(rect.x),
             y: Math.round(rect.y),
@@ -41,39 +47,31 @@ const Tile: React.FC<TileProps> = ({ id, initialUrl, onClose }) => {
             height: Math.round(rect.height),
           });
         }
+    };
+
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+         updateBounds();
       }
     });
 
     if (containerRef.current) {
       observer.observe(containerRef.current);
+      // Initial bounds update
+      updateBounds();
     }
+
+    // Also listen to window resize
+    window.addEventListener('resize', updateBounds);
 
     return () => {
       observer.disconnect();
-      // Ensure we clean up the view when component unmounts
-      window.electronAPI.closeTile(id);
+      window.removeEventListener('resize', updateBounds);
+      // Hide the view when component unmounts (e.g. switching tabs)
+      // but do not destroy it (unless onClose is called by parent).
+      window.electronAPI.hideTile(id);
     };
-  }, [id, initialUrl]);
-
-  // Handle periodic updates because scrolling or window resize might not trigger ResizeObserver on the element if it's fixed?
-  // ResizeObserver handles size changes. Position changes (e.g. flow) might not trigger it if size is constant.
-  // But in a grid, size usually changes with window resize.
-  // We should also listen to window resize just in case.
-  useEffect(() => {
-    const handleResize = () => {
-      if (containerRef.current) {
-        const rect = containerRef.current.getBoundingClientRect();
-        window.electronAPI.updateBounds(id, {
-          x: Math.round(rect.x),
-          y: Math.round(rect.y),
-          width: Math.round(rect.width),
-          height: Math.round(rect.height),
-        });
-      }
-    };
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, [id]);
+  }, [id]); // Removed initialUrl dependency to avoid re-navigating if prop changes slightly
 
   const handleNavigate = (e: React.FormEvent) => {
     e.preventDefault();
@@ -112,11 +110,9 @@ const Tile: React.FC<TileProps> = ({ id, initialUrl, onClose }) => {
       <div
         ref={containerRef}
         className="flex-1 w-full bg-white/5 relative"
-        // The browser view will be placed here by the main process.
-        // We make it transparent-ish to debug layout.
       >
         <div className="absolute inset-0 flex items-center justify-center text-gray-500 pointer-events-none">
-          Loading View...
+          {/* This is just a placeholder. The actual view is an overlay. */}
         </div>
       </div>
     </div>

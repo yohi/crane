@@ -33,4 +33,21 @@ export function registerIpc() {
       viewManager.destroyView(viewId);
     }
   });
+
+  ipcMain.handle('MSTB_HIDE_TILE', async (_, { viewId }) => {
+    if (viewId) {
+      viewManager.hideView(viewId);
+    }
+  });
+
+  ipcMain.handle('MSTB_CREATE_MULTIPLE_TABS', async (_, { count, url }) => {
+    const created: { id: string; url: string }[] = [];
+    const targetUrl = url || 'https://google.com';
+    for (let i = 0; i < count; i++) {
+      const id = crypto.randomUUID();
+      viewManager.createView(id, targetUrl);
+      created.push({ id, url: targetUrl });
+    }
+    return created;
+  });
 }
