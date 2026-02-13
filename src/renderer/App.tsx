@@ -14,11 +14,13 @@ const App: React.FC = () => {
   const [activeTabId, setActiveTabId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'tab' | 'grid'>('tab');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalTargetUrl, setModalTargetUrl] = useState<string>('');
   const pendingCreationsRef = useRef(0);
 
   useEffect(() => {
     // Listen for IPC message to open modal
-    const unsubscribe = window.electronAPI.onShowTabCreationModal(() => {
+    const unsubscribe = window.electronAPI.onShowTabCreationModal((url) => {
+      setModalTargetUrl(url);
       setIsModalOpen(true);
     });
     return unsubscribe;
@@ -40,7 +42,8 @@ const App: React.FC = () => {
     pendingCreationsRef.current += countToCreate;
 
     try {
-      const newTabs = await window.electronAPI.createMultipleTabs(countToCreate, 'https://google.com');
+      const targetUrl = modalTargetUrl || 'https://google.com';
+      const newTabs = await window.electronAPI.createMultipleTabs(countToCreate, targetUrl);
       setTiles(prev => [...prev, ...newTabs]);
       if (newTabs.length > 0) {
         setActiveTabId(newTabs[newTabs.length - 1].id);
@@ -185,6 +188,7 @@ const App: React.FC = () => {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onSubmit={handleCreateMultiple}
+        url={modalTargetUrl}
       />
     </div>
   );

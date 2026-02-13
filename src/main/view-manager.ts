@@ -59,7 +59,8 @@ export class ViewManager {
         label: '新しいタブで複数開く',
         click: () => {
           if (this.mainWindow) {
-            this.mainWindow.webContents.send('MSTB_SHOW_TAB_CREATION_MODAL');
+            const targetUrl = params.linkURL || params.pageURL || '';
+            this.mainWindow.webContents.send('MSTB_SHOW_TAB_CREATION_MODAL', targetUrl);
           }
         }
       }));
