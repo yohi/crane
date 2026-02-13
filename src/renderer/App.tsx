@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import TileGrid from './components/TileGrid';
 import TabBar from './components/TabBar';
 import Tile from './components/Tile';
@@ -14,6 +14,7 @@ const App: React.FC = () => {
   const [activeTabId, setActiveTabId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'tab' | 'grid'>('tab');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const pendingCreationsRef = useRef(0);
 
   useEffect(() => {
     // Listen for IPC message to open modal
@@ -25,13 +26,15 @@ const App: React.FC = () => {
 
   const handleCreateMultiple = async (count: number) => {
     // Limit total tabs to 9
-    const available = 9 - tiles.length;
+    const normalizedCount = Math.max(0, Math.floor(count));
+    const available = 9 - (tiles.length + pendingCreationsRef.current);
     if (available <= 0) {
       console.warn("Max tabs reached");
       return;
     }
 
-    const countToCreate = Math.min(count, available);
+    const countToCreate = Math.min(normalizedCount, available);
+    pendingCreationsRef.current += countToCreate;
 
     try {
       const newTabs = await window.electronAPI.createMultipleTabs(countToCreate, 'https://google.com');
@@ -42,15 +45,19 @@ const App: React.FC = () => {
       }
     } catch (e) {
       console.error("Failed to create multiple tabs:", e);
+    } finally {
+      pendingCreationsRef.current -= countToCreate;
     }
   };
 
   const addTab = async (url: string = 'https://google.com') => {
     // Limit total tabs to 9. TileGrid supports up to 9 nicely, so we enforce this hard limit.
-    if (tiles.length >= 9) {
+    if (tiles.length + pendingCreationsRef.current >= 9) {
         console.warn("Max tabs reached");
         return;
     }
+
+    pendingCreationsRef.current += 1;
 
     try {
       const id = await window.electronAPI.createTile(url);
@@ -59,6 +66,8 @@ const App: React.FC = () => {
       setViewMode('tab'); // Switch to tab view on new tab
     } catch (e) {
       console.error("Failed to create tab:", e);
+    } finally {
+      pendingCreationsRef.current -= 1;
     }
   };
 
@@ -70,13 +79,12 @@ const App: React.FC = () => {
       setTiles(prev => {
         const newTiles = prev.filter(t => t.id !== id);
         // If we closed the active tab, switch to another
-        if (id === activeTabId) {
-          if (newTiles.length > 0) {
-            setActiveTabId(newTiles[newTiles.length - 1].id);
-          } else {
-            setActiveTabId(null);
+        setActiveTabId(prevActive => {
+          if (prevActive === id) {
+            return newTiles.length ? newTiles[newTiles.length - 1].id : null;
           }
-        }
+          return prevActive;
+        });
         return newTiles;
       });
     } catch (e) {
@@ -96,13 +104,13 @@ const App: React.FC = () => {
   // Listen for shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Ctrl+T for new tab
-      if (e.ctrlKey && e.key === 't') {
+      // Ctrl+T or Cmd+T for new tab
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 't') {
         e.preventDefault(); // Prevent standard browser new tab
         addTab();
       }
-      // Ctrl+W to close active tab
-      if (e.ctrlKey && e.key === 'w') {
+      // Ctrl+W or Cmd+W to close active tab
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'w') {
         e.preventDefault();
         if (activeTabId) closeTab(activeTabId);
       }
