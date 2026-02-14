@@ -7,7 +7,9 @@ files:
   - dist/**/*
   - package.json
 linux:
-  target: deb
+  target:
+    - deb
+    - AppImage
   category: Network
 mac:
   target: dmg
