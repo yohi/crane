@@ -13,6 +13,9 @@ const createWindow = () => {
     width: 1200,
     height: 800,
     backgroundColor: '#1a202c',
+    icon: process.env.NODE_ENV === 'development'
+      ? path.join(__dirname, '../../build/icon.png')
+      : path.join(__dirname, '../renderer/icon.png'),
     webPreferences: {
       preload: path.join(__dirname, '../preload/index.js'),
       nodeIntegration: false,
