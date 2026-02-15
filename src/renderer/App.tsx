@@ -58,19 +58,15 @@ const App: React.FC = () => {
     try {
       const targetUrl = modalTargetUrl || 'https://google.com';
       const newTabs = await window.electronAPI.createMultipleTabs(countToCreate, targetUrl);
-      setTiles(prev => {
-        const nextTiles = [...prev, ...newTabs];
-        if (newTabs.length > 0) {
-          const newTotal = nextTiles.length;
-          const newIndex = newTotal - 1;
-          setGridPage(Math.floor(newIndex / 9));
-        }
-        return nextTiles;
-      });
-
+      setTiles(prev => [...prev, ...newTabs]);
       if (newTabs.length > 0) {
         setActiveTabId(newTabs[newTabs.length - 1].id);
         setViewMode('tab');
+
+        // Update grid page to include the new tab
+        const newTotal = tiles.length + newTabs.length;
+        const newIndex = newTotal - 1;
+        setGridPage(Math.floor(newIndex / 9));
       }
     } catch (e) {
       console.error("Failed to create multiple tabs:", e);
@@ -92,14 +88,13 @@ const App: React.FC = () => {
 
     try {
       const id = await window.electronAPI.createTile(url);
-      setTiles(prev => {
-        const nextTiles = [...prev, { id, url }];
-        const newIndex = nextTiles.length - 1;
-        setGridPage(Math.floor(newIndex / 9));
-        return nextTiles;
-      });
+      setTiles(prev => [...prev, { id, url }]);
       setActiveTabId(id);
       setViewMode('tab'); // Switch to tab view on new tab
+
+      // Update grid page to ensure we are on the page of the new tab
+      const newIndex = tiles.length; // Index of the new tab (current length)
+      setGridPage(Math.floor(newIndex / 9));
     } catch (e) {
       console.error("Failed to create tab:", e);
     } finally {
