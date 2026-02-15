@@ -9,6 +9,7 @@ export interface ElectronAPI {
   hideTile: (viewId: string) => Promise<void>;
   onShowTabCreationModal: (callback: (url: string) => void) => () => void;
   createMultipleTabs: (count: number, url?: string) => Promise<{ id: string; url: string }[]>;
+  onPaginate: (callback: (direction: number) => void) => () => void;
 }
 
 const electronAPI: ElectronAPI = {
@@ -24,6 +25,13 @@ const electronAPI: ElectronAPI = {
     ipcRenderer.on('MSTB_SHOW_TAB_CREATION_MODAL', subscription);
     return () => {
       ipcRenderer.removeListener('MSTB_SHOW_TAB_CREATION_MODAL', subscription);
+    };
+  },
+  onPaginate: (callback: (direction: number) => void) => {
+    const subscription = (_: any, direction: number) => callback(direction);
+    ipcRenderer.on('MSTB_PAGINATE', subscription);
+    return () => {
+      ipcRenderer.removeListener('MSTB_PAGINATE', subscription);
     };
   }
 };

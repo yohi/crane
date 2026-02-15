@@ -6,6 +6,7 @@ export interface ElectronAPI {
   closeTile: (viewId: string) => Promise<void>;
   createMultipleTabs: (count: number, url: string) => Promise<{ id: string; url: string }[]>;
   onShowTabCreationModal: (callback: (url: string) => void) => () => void;
+  onPaginate: (callback: (direction: number) => void) => () => void;
 }
 
 declare global {

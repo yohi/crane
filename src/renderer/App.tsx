@@ -13,6 +13,7 @@ const App: React.FC = () => {
   const [tiles, setTiles] = useState<TileData[]>([]);
   const [activeTabId, setActiveTabId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'tab' | 'grid'>('tab');
+  const [gridPage, setGridPage] = useState(0);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalTargetUrl, setModalTargetUrl] = useState<string>('');
   const pendingCreationsRef = useRef(0);
@@ -26,13 +27,26 @@ const App: React.FC = () => {
     return unsubscribe;
   }, []);
 
+  // Listen for pagination from Main process
+  useEffect(() => {
+    return window.electronAPI.onPaginate((direction) => {
+      if (viewMode === 'grid') {
+        setGridPage(prev => {
+          const maxPage = Math.max(0, Math.ceil(tiles.length / 9) - 1);
+          const newPage = prev + direction;
+          return Math.max(0, Math.min(newPage, maxPage));
+        });
+      }
+    });
+  }, [viewMode, tiles.length]);
+
   const handleCreateMultiple = async (count: number) => {
-    // Limit total tabs to 9
+    // Limit total tabs to 100
     const parsed = Number(count);
     const normalizedCount = Number.isFinite(parsed) ? Math.max(0, Math.floor(parsed)) : 0;
 
     if (normalizedCount === 0) return;
-    const available = 9 - (tiles.length + pendingCreationsRef.current);
+    const available = 100 - (tiles.length + pendingCreationsRef.current);
     if (available <= 0) {
       console.warn("Max tabs reached");
       return;
@@ -48,6 +62,11 @@ const App: React.FC = () => {
       if (newTabs.length > 0) {
         setActiveTabId(newTabs[newTabs.length - 1].id);
         setViewMode('tab');
+
+        // Update grid page to include the new tab
+        const newTotal = tiles.length + newTabs.length;
+        const newIndex = newTotal - 1;
+        setGridPage(Math.floor(newIndex / 9));
       }
     } catch (e) {
       console.error("Failed to create multiple tabs:", e);
@@ -59,8 +78,8 @@ const App: React.FC = () => {
   };
 
   const addTab = async (url: string = 'https://google.com') => {
-    // Limit total tabs to 9. TileGrid supports up to 9 nicely, so we enforce this hard limit.
-    if (tiles.length + pendingCreationsRef.current >= 9) {
+    // Limit total tabs to 100.
+    if (tiles.length + pendingCreationsRef.current >= 100) {
         console.warn("Max tabs reached");
         return;
     }
@@ -72,6 +91,10 @@ const App: React.FC = () => {
       setTiles(prev => [...prev, { id, url }]);
       setActiveTabId(id);
       setViewMode('tab'); // Switch to tab view on new tab
+
+      // Update grid page to ensure we are on the page of the new tab
+      const newIndex = tiles.length; // Index of the new tab (current length)
+      setGridPage(Math.floor(newIndex / 9));
     } catch (e) {
       console.error("Failed to create tab:", e);
     } finally {
@@ -86,6 +109,13 @@ const App: React.FC = () => {
 
       setTiles(prev => {
         const newTiles = prev.filter(t => t.id !== id);
+
+        // If the current page is now empty (and not the first page), go back one page
+        const totalPages = Math.ceil(newTiles.length / 9) || 1;
+        if (gridPage >= totalPages) {
+           setGridPage(Math.max(0, totalPages - 1));
+        }
+
         // If we closed the active tab, switch to another
         setActiveTabId(prevActive => {
           if (prevActive === id) {
@@ -103,6 +133,12 @@ const App: React.FC = () => {
   const handleTabSelect = (id: string) => {
     setActiveTabId(id);
     setViewMode('tab');
+
+    // Update grid page to match the selected tab
+    const index = tiles.findIndex(t => t.id === id);
+    if (index >= 0) {
+      setGridPage(Math.floor(index / 9));
+    }
   };
 
   const toggleViewMode = () => {
@@ -125,7 +161,7 @@ const App: React.FC = () => {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [activeTabId, tiles]);
+  }, [activeTabId, tiles, gridPage]); // Added gridPage as dependency just in case
 
   return (
     <div className="h-screen w-screen bg-gray-900 text-white flex flex-col overflow-hidden">
@@ -152,7 +188,11 @@ const App: React.FC = () => {
         */}
         {!isModalOpen && (
           viewMode === 'grid' ? (
-            <TileGrid tiles={tiles} onClose={closeTab} />
+            <TileGrid
+              tiles={tiles.slice(gridPage * 9, (gridPage + 1) * 9)}
+              onClose={closeTab}
+              force3x3={tiles.length > 9}
+            />
           ) : (
             /* Tab View: Render only the active tab */
             activeTabId && (

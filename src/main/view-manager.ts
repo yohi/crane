@@ -37,6 +37,19 @@ export class ViewManager {
     this.visibleViews.add(id);
     view.webContents.loadURL(url);
 
+    // Handle shortcuts for pagination
+    view.webContents.on('before-input-event', (event, input) => {
+      if (input.type === 'keyDown' && input.control && input.alt) {
+        if (input.key === 'ArrowLeft') {
+          event.preventDefault();
+          this.mainWindow?.webContents.send('MSTB_PAGINATE', -1);
+        } else if (input.key === 'ArrowRight') {
+          event.preventDefault();
+          this.mainWindow?.webContents.send('MSTB_PAGINATE', 1);
+        }
+      }
+    });
+
     // Handle new window requests (e.g. target="_blank")
     view.webContents.setWindowOpenHandler(({ url }) => {
       view.webContents.loadURL(url);

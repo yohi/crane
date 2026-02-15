@@ -32,6 +32,19 @@ const createWindow = () => {
   mainWindow.on('closed', () => {
     mainWindow = null;
   });
+
+  // Handle shortcuts for pagination when main window has focus
+  mainWindow.webContents.on('before-input-event', (event, input) => {
+    if (input.type === 'keyDown' && input.control && input.alt) {
+      if (input.key === 'ArrowLeft') {
+        event.preventDefault();
+        mainWindow?.webContents.send('MSTB_PAGINATE', -1);
+      } else if (input.key === 'ArrowRight') {
+        event.preventDefault();
+        mainWindow?.webContents.send('MSTB_PAGINATE', 1);
+      }
+    }
+  });
 };
 
 app.whenReady().then(() => {

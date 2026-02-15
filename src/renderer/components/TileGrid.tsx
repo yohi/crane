@@ -9,11 +9,13 @@ interface TileData {
 interface TileGridProps {
   tiles: TileData[];
   onClose: (id: string) => void;
+  force3x3?: boolean;
 }
 
-const TileGrid: React.FC<TileGridProps> = ({ tiles, onClose }) => {
+const TileGrid: React.FC<TileGridProps> = ({ tiles, onClose, force3x3 }) => {
   // Grid classes based on tile count
   const getGridClass = (count: number) => {
+    if (force3x3) return 'grid-cols-3 grid-rows-3';
     if (count <= 1) return 'grid-cols-1 grid-rows-1';
     if (count <= 2) return 'grid-cols-2 grid-rows-1';
     if (count <= 4) return 'grid-cols-2 grid-rows-2';
