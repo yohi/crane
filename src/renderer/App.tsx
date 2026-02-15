@@ -117,9 +117,12 @@ const App: React.FC = () => {
 
         // If the current page is now empty (and not the first page), go back one page
         const totalPages = Math.ceil(newTiles.length / 9) || 1;
-        if (gridPage >= totalPages) {
-           setGridPage(Math.max(0, totalPages - 1));
-        }
+        setGridPage(currentPage => {
+          if (currentPage >= totalPages) {
+            return Math.max(0, totalPages - 1);
+          }
+          return currentPage;
+        });
 
         // If we closed the active tab, switch to another
         setActiveTabId(prevActive => {
